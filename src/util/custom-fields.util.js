@@ -1,21 +1,21 @@
 class CustomFieldsUtil {
   /**
    * @returns {Object}
-   * @description Get custom fields.
+   * @description Get custom fields list.
    */
-  static async getCustomFields() {
+  static async getCustomFieldsList() {
     return {
-      projectCustomFields: CustomFieldsUtil._getProjectCustomFields(),
-      stateCustomFields: CustomFieldsUtil._getStateCustomFields()
+      projectCustomFieldsList: CustomFieldsUtil._getProjectCustomFieldsList(),
+      stateCustomFieldsList: CustomFieldsUtil._getStateCustomFieldsList()
     }
   }
 
   /**
    * @private
    * @returns {Object}
-   * @description Get project custom fields.
+   * @description Get project custom fields list.
    */
-  static async _getProjectCustomFields () {
+  static async _getProjectCustomFieldsList () {
     const customFields = []
     let offset = 0
 
@@ -37,9 +37,9 @@ class CustomFieldsUtil {
   /**
    * @private
    * @returns {Object}
-   * @description Get state custom fields.
+   * @description Get state custom fields list.
    */
-  static async _getStateCustomFields () {
+  static async _getStateCustomFieldsList () {
     const customFields = []
     let offset = 0
 
