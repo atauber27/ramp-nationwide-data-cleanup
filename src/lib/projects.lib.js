@@ -1,7 +1,8 @@
 const AuthLib = require('./auth.lib')
 const Bluebird = require('bluebird')
-const { AttachmentsUtil } = require('../util')
+const { AttachmentsUtil, CustomFieldsUtil } = require('../util')
 const { ParamsUtil } = require('@filingramp/ramp-util')
+const { CustomFieldEnum } = require('@filingramp/ramp-schemas')
 
 class ProjectsLib {
   /**
@@ -13,6 +14,7 @@ class ProjectsLib {
   static async moveProjectToProduct (projectId, productId) {
     try {
       const { data } = await AuthLib.get(`/projects/${projectId}`)
+  
       const { attachments, customFields, stateCustomFields, subscribers } = data
 
       const props = ['archived', 'createdAt', 'description', 'name', 'order', 'projectNumber', 'status', 'updatedAt']
@@ -43,9 +45,11 @@ class ProjectsLib {
   static async _copySubResources (attachments, customFields, projectIdTo, stateCustomFields) {
     await ProjectsLib._copyAttachments(attachments, projectIdTo)
 
-    await ProjectsLib._copyCustomFields(customFields, projectIdTo)
+    const { projectCustomFieldsList, stateCustomFieldsList } = CustomFieldsUtil.getCustomFieldsList()
 
-    await ProjectsLib._copyStateCustomFields(stateCustomFields, projectIdTo)
+    await ProjectsLib._copyCustomFields(customFields, projectCustomFieldsList, projectIdTo)
+
+    await ProjectsLib._copyStateCustomFields(stateCustomFields, stateCustomFieldsList, projectIdTo)
   }
 
   /**
@@ -89,29 +93,78 @@ class ProjectsLib {
 
   /**
    * @private
+   * @param {Array<Object>} customFields
+   * @param {Array<Object>} projectCustomFieldsList
    * @param {string|ObjectId} projectIdTo
    * @returns {Promise<void>}
    * @description Copy custom fields.
    */
-  static async _copyCustomFields (customFields, projectIdTo) {
-    await Bluebird.each(customFields, ProjectsLib._copyCustomField(projectIdTo))
+  static async _copyCustomFields (customFields, projectCustomFieldsList, projectIdTo) {
+    await Bluebird.each(customFields, ProjectsLib._copyCustomField(projectIdTo, projectCustomFieldsList))
   }
 
   /**
    * @private
    * @param {string|ObjectId} projectIdTo
+   * @param {Array<Object>} projectCustomFieldsList
    * @returns {function(*): Promise<*>}
    * @description Copy custom field.
    */
-  static async _copyCustomField (projectIdTo) {
+  static async _copyCustomField (projectIdTo, projectCustomFieldsList) {
     return async (customField) => {
       try {
+        const { valueType } = projectCustomFieldsList
+          .find((field) => field._id.toString() === customField.customFieldId.toString())
+
         const props = ['company', 'customFieldId', 'state', 'value']
 
         const payload = ParamsUtil.destruct(customField, props)
-        payload.operator = 'add'
 
-        await AuthLib.put(`/projects/${projectIdTo}/customFields`, payloadOptional)
+        if (valueType === CustomFieldEnum.ValueType.HASH_SET) {
+          payload.operator = 'add'
+        }
+
+        await AuthLib.put(`/projects/${projectIdTo}/customFields`, payload)
+      } catch (error) {
+        console.error(error)
+      }
+    }
+  }
+
+  /**
+   * @private
+   * @param {Array<Object>} stateCustomFields
+   * @param {Array<Object>} stateCustomFieldsList
+   * @param {string|ObjectId} projectIdTo
+   * @returns {Promise<void>}
+   * @description Copy state custom fields.
+   */
+  static async _copyStateCustomFields (stateCustomFields, stateCustomFieldsList, projectIdTo) {
+    await Bluebird.each(stateCustomFields, ProjectsLib._copyStateCustomField(projectIdTo, stateCustomFieldsList))
+  }
+
+  /**
+   * @private
+   * @param {string|ObjectId} projectIdTo
+   * @param {Array<Object>} stateCustomFieldsList
+   * @returns {function(*): Promise<*>}
+   * @description Copy state custom field.
+   */
+  static async _copyStateCustomField (projectIdTo, stateCustomFieldsList) {
+    return async (customField) => {
+      try {
+        const { valueType } = stateCustomFieldsList
+          .find((field) => field._id.toString() === customField.customFieldId.toString())
+
+        const props = ['company', 'customFieldId', 'value']
+
+        const payload = ParamsUtil.destruct(customField, props)
+
+        if (valueType === CustomFieldEnum.ValueType.HASH_SET) {
+          payload.operator = 'add'
+        }
+
+        await AuthLib.put(`/projects/${projectIdTo}/customFields`, payload)
       } catch (error) {
         console.error(error)
       }
