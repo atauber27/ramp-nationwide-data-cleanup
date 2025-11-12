@@ -29,12 +29,15 @@ class ProjectsLib {
       await ProjectsLib._copySubResources(attachments, customFields, _id, stateCustomFields)
 
       await ProjectsLib._moveFilingsToProject(projectId, _id, productId)
+
+      await ProjectsLib._archiveProject(data)
     } catch (error) {
       console.error(error)
     }
   }
 
   /**
+   * @private
    * @param {Array<Object>} attachments
    * @param {Array<Object>} customFields
    * @param {string|ObjectId} projectIdTo
@@ -173,6 +176,7 @@ class ProjectsLib {
   }
 
   /**
+   * @private
    * @param {string|ObjectId} projectIdFrom
    * @param {string|ObjectId} projectIdTo
    * @param {string|ObjectId} productId
@@ -182,10 +186,25 @@ class ProjectsLib {
   static async _moveFilingsToProject (projectIdFrom, projectIdTo, productId) {
     const payload = {
       filters: [{ field: 'projectIds', comparisonOperator: 'in', value: [projectIdFrom] }],
-      payload: { productId, projectIdTo }
+      payload: { productId, projectId: projectIdTo }
     }
 
     await AuthLib.patch('/filings/containers', payload)
+  }
+
+  /**
+   * @private
+   * @param {Object} project
+   * @returns {Promise<void>}
+   * @description Archive project.
+   */
+  static async _archiveProject (project) {
+    const { _id, name } = project
+
+    const newName = `[ARCHIVED] ${name}`
+    const payload = { archived: true, name: newName }
+
+    await AuthLib.patch(`/projects/${_id}`, payload)
   }
 }
 
