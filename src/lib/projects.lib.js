@@ -30,9 +30,9 @@ class ProjectsLib {
 
       await ProjectsLib._moveFilingsToProject(projectId, _id, productId)
 
-      await ProjectsLib._archiveProject(data)
+      await AuthLib.patch(`/projects/${_id}`, { archived: true })
     } catch (error) {
-      console.error(error)
+      console.error(error.response.data)
     }
   }
 
@@ -89,7 +89,7 @@ class ProjectsLib {
           await AuthLib.post(`/projects/${projectIdTo}/attachments`, payload)
         }
       } catch (error) {
-        console.error(error)
+        console.error(error.response.data)
       }
     }
   }
@@ -129,7 +129,7 @@ class ProjectsLib {
 
         await AuthLib.put(`/projects/${projectIdTo}/custom-fields`, payload)
       } catch (error) {
-        console.error(error)
+        console.error(error.response.data)
       }
     }
   }
@@ -170,7 +170,7 @@ class ProjectsLib {
 
         await AuthLib.put(`/projects/${projectIdTo}/states/${state}/custom-fields`, payload)
       } catch (error) {
-        console.error(error)
+        console.error(error.response.data)
       }
     }
   }
@@ -190,21 +190,6 @@ class ProjectsLib {
     }
 
     await AuthLib.patch('/filings/containers', payload)
-  }
-
-  /**
-   * @private
-   * @param {Object} project
-   * @returns {Promise<void>}
-   * @description Archive project.
-   */
-  static async _archiveProject (project) {
-    const { _id, name } = project
-
-    const newName = `[ARCHIVED] ${name}`
-    const payload = { archived: true, name: newName }
-
-    await AuthLib.patch(`/projects/${_id}`, payload)
   }
 }
 
