@@ -18,17 +18,17 @@ class ProjectsLib {
       const { attachments, customFields, stateCustomFields, subscribers } = data
 
       const props = ['archived', 'createdAt', 'description', 'name', 'order', 'projectNumber', 'status', 'updatedAt']
-      
-      const payload = { productId }
-      const payloadOptional = ParamsUtil.destruct(payload, props)
+      const payload = { ...ParamsUtil.destruct(data, props), productId }
 
-      const newProject = await AuthLib.post('/projects', payloadOptional)
+      const { data: newProject } = await AuthLib.post('/projects', payload)
 
       const { _id } = newProject
 
       await AuthLib.post(`/projects/${_id}/subscribers`, { userIds: subscribers })
 
       await ProjectsLib._copySubResources(attachments, customFields, _id, stateCustomFields)
+
+      await FilingsLib._moveFilingsToProject(projectId, _id, productId)
     } catch (error) {
       console.error(error)
     }
@@ -45,7 +45,7 @@ class ProjectsLib {
   static async _copySubResources (attachments, customFields, projectIdTo, stateCustomFields) {
     await ProjectsLib._copyAttachments(attachments, projectIdTo)
 
-    const { projectCustomFieldsList, stateCustomFieldsList } = CustomFieldsUtil.getCustomFieldsList()
+    const { projectCustomFieldsList, stateCustomFieldsList } = await CustomFieldsUtil.getCustomFieldsList()
 
     await ProjectsLib._copyCustomFields(customFields, projectCustomFieldsList, projectIdTo)
 
@@ -69,7 +69,7 @@ class ProjectsLib {
    * @returns {function(*): Promise<*>}
    * @description Copy attachment.
    */
-  static async _copyAttachment (projectIdTo) {
+  static _copyAttachment (projectIdTo) {
     return async (attachment) => {
       try {
         const { driveFile, key, name } = attachment
@@ -110,7 +110,7 @@ class ProjectsLib {
    * @returns {function(*): Promise<*>}
    * @description Copy custom field.
    */
-  static async _copyCustomField (projectIdTo, projectCustomFieldsList) {
+  static _copyCustomField (projectIdTo, projectCustomFieldsList) {
     return async (customField) => {
       try {
         const { valueType } = projectCustomFieldsList
@@ -124,7 +124,7 @@ class ProjectsLib {
           payload.operator = 'add'
         }
 
-        await AuthLib.put(`/projects/${projectIdTo}/customFields`, payload)
+        await AuthLib.put(`/projects/${projectIdTo}/custom-fields`, payload)
       } catch (error) {
         console.error(error)
       }
@@ -150,9 +150,10 @@ class ProjectsLib {
    * @returns {function(*): Promise<*>}
    * @description Copy state custom field.
    */
-  static async _copyStateCustomField (projectIdTo, stateCustomFieldsList) {
+  static _copyStateCustomField (projectIdTo, stateCustomFieldsList) {
     return async (customField) => {
       try {
+        const { state } = customField
         const { valueType } = stateCustomFieldsList
           .find((field) => field._id.toString() === customField.customFieldId.toString())
 
@@ -164,7 +165,7 @@ class ProjectsLib {
           payload.operator = 'add'
         }
 
-        await AuthLib.put(`/projects/${projectIdTo}/customFields`, payload)
+        await AuthLib.put(`/projects/${projectIdTo}/states/${state}/custom-fields`, payload)
       } catch (error) {
         console.error(error)
       }
