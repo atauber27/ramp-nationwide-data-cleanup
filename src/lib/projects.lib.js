@@ -28,7 +28,7 @@ class ProjectsLib {
 
       await ProjectsLib._copySubResources(attachments, customFields, _id, stateCustomFields)
 
-      await FilingsLib._moveFilingsToProject(projectId, _id, productId)
+      await ProjectsLib._moveFilingsToProject(projectId, _id, productId)
     } catch (error) {
       console.error(error)
     }
@@ -170,6 +170,22 @@ class ProjectsLib {
         console.error(error)
       }
     }
+  }
+
+  /**
+   * @param {string|ObjectId} projectIdFrom
+   * @param {string|ObjectId} projectIdTo
+   * @param {string|ObjectId} productId
+   * @returns {Promise<void>}
+   * @description Move filings to project.
+  */
+  static async _moveFilingsToProject (projectIdFrom, projectIdTo, productId) {
+    const payload = {
+      filters: [{ field: 'projectIds', comparisonOperator: 'in', value: [projectIdFrom] }],
+      payload: { productId, projectIdTo }
+    }
+
+    await AuthLib.patch('/filings/containers', payload)
   }
 }
 
