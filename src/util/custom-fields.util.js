@@ -1,13 +1,15 @@
+const { AuthLib } = require("../lib")
+
 class CustomFieldsUtil {
   /**
    * @returns {Object}
    * @description Get custom fields list.
    */
   static async getCustomFieldsList() {
-    return {
-      projectCustomFieldsList: CustomFieldsUtil._getProjectCustomFieldsList(),
-      stateCustomFieldsList: CustomFieldsUtil._getStateCustomFieldsList()
-    }
+    const projectCustomFieldsList = await CustomFieldsUtil._getProjectCustomFieldsList()
+    const stateCustomFieldsList = await CustomFieldsUtil._getStateCustomFieldsList()
+
+    return { projectCustomFieldsList, stateCustomFieldsList }
   }
 
   /**
@@ -20,11 +22,11 @@ class CustomFieldsUtil {
     let offset = 0
 
     while (true) {
-      const _customFields = await AuthLib
+      const { data: _customFields } = await AuthLib
         .get(`/custom-fields?type=PROJECT&limit=${CustomFieldsUtil._LIMIT}&offset=${offset}`)
 
       customFields.push(..._customFields)
-      if (customFields.length < limit) {
+      if (customFields.length < CustomFieldsUtil._LIMIT) {
         break
       }
 
@@ -44,11 +46,11 @@ class CustomFieldsUtil {
     let offset = 0
 
     while (true) {
-      const _customFields = await AuthLib
+      const { data: _customFields } = await AuthLib
         .get(`/custom-fields?type=PROJECT_STATE&limit=${CustomFieldsUtil._LIMIT}&offset=${offset}`)
 
       customFields.push(..._customFields)
-      if (customFields.length < limit) {
+      if (customFields.length < CustomFieldsUtil._LIMIT) {
         break
       }
 
