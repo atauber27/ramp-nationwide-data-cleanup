@@ -11,28 +11,34 @@ class ProjectsLib {
    * @returns {Promise<void>}
    * @description Move project to product.
    */
-  static async moveProjectToProduct (projectId, productId) {
-    try {
-      const { data } = await AuthLib.get(`/projects/${projectId}`)
-  
-      const { attachments, customFields, stateCustomFields, subscribers } = data
+  static moveProjectToProduct () {
+    return async ({ productId, projectId, projectName}) => {
+      try {
+        console.log(`Moving ${projectName}...`)
 
-      const props = ['archived', 'createdAt', 'description', 'name', 'order', 'projectNumber', 'status', 'updatedAt']
-      const payload = { ...ParamsUtil.destruct(data, props), productId }
+        const { data } = await AuthLib.get(`/projects/${projectId}`)
+    
+        const { attachments, customFields, stateCustomFields, subscribers } = data
 
-      const { data: newProject } = await AuthLib.post('/projects', payload)
+        const props = ['archived', 'createdAt', 'description', 'name', 'order', 'projectNumber', 'status', 'updatedAt']
+        const payload = { ...ParamsUtil.destruct(data, props), productId }
 
-      const { _id } = newProject
+        const { data: newProject } = await AuthLib.post('/projects', payload)
 
-      await AuthLib.post(`/projects/${_id}/subscribers`, { userIds: subscribers })
+        const { _id } = newProject
 
-      await ProjectsLib._copySubResources(attachments, customFields, _id, stateCustomFields)
+        await AuthLib.post(`/projects/${_id}/subscribers`, { userIds: subscribers })
 
-      await ProjectsLib._moveFilingsToProject(projectId, _id, productId)
+        await ProjectsLib._copySubResources(attachments, customFields, _id, stateCustomFields)
 
-      await AuthLib.patch(`/projects/${_id}`, { archived: true })
-    } catch (error) {
-      console.error(error.response.data)
+        await ProjectsLib._moveFilingsToProject(projectId, _id, productId)
+
+        await AuthLib.patch(`/projects/${_id}`, { archived: true })
+
+        console.log(`${projectName} successfully moved... Old projectId: ${projectId}, new projectId: ${_id}\n`)
+      } catch (error) {
+        console.error(error.response.data)
+      }
     }
   }
 
