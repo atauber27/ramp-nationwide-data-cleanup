@@ -17,6 +17,11 @@ class ProjectsLib {
         console.log(`Moving ${projectName}...`)
 
         const { data } = await AuthLib.get(`/projects/${projectId}`)
+
+        if (data.archived) {
+          console.log(`SKIPPING ${projectName} - project is archived!`)
+          return
+        }
     
         const { attachments, customFields, stateCustomFields, subscribers } = data
 
